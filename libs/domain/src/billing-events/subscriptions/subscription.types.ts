@@ -1,0 +1,19 @@
+export interface SubscriptionPayload {
+    subscriptionId: string;
+    userId: string;
+  
+    productId: string;
+    priceId: string;
+  
+    status: "active" | "paused" | "canceled" | "expired" | "trialing" | "past_due";
+  
+    currentPeriodStart: string;
+    currentPeriodEnd: string;
+  
+    cancelAtPeriodEnd?: boolean;
+    
+    previousProductId?: string; // The productId from the previous subscription (for updates)
+    
+    addonProductIds?: string[]; // Array of add-on product IDs attached to this subscription
+  }
+  
