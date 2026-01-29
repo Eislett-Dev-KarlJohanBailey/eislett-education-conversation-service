@@ -1,7 +1,7 @@
 import { ConversationRepository } from "../../infrastructure/repositories/conversation.repository";
 import { ConversationPlanRepository } from "../../infrastructure/repositories/conversation-plan.repository";
 import { OpenAIClient } from "../../infrastructure/openai.client";
-import { ConversationPlanTarget, SayWordTarget, AvoidWordTarget, CoverDiscussionPointsTarget } from "../../domain/types/conversation-plan.types";
+import { SayWordTarget, AvoidWordTarget, CoverDiscussionPointsTarget } from "../../domain/types/conversation-plan.types";
 import { TargetProgress } from "../../domain/types/conversation.types";
 import { TranscriptCreatedEvent } from "../../handler/sqs/parse-event";
 
