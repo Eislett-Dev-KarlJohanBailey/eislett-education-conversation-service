@@ -4,7 +4,6 @@ import {
 import {
   DynamoDBDocumentClient,
   PutCommand,
-  GetCommand,
   QueryCommand,
   ScanCommand,
   DeleteCommand,
@@ -89,7 +88,6 @@ export class ConversationPlanRepository {
 
     let items: ConversationPlan[] = [];
     let lastEvaluatedKey: any = undefined;
-    let scannedCount = 0;
 
     // If filtering by stage, use GSI1
     if (filters.stage !== undefined) {
@@ -119,7 +117,6 @@ export class ConversationPlanRepository {
       );
 
       items = (result.Items || []).map(this.mapToDomain);
-      scannedCount = result.Count || 0;
     } else {
       // Scan the table
       const filterExpressions: string[] = [];
@@ -143,7 +140,6 @@ export class ConversationPlanRepository {
       );
 
       items = (result.Items || []).map(this.mapToDomain);
-      scannedCount = result.ScannedCount || 0;
       lastEvaluatedKey = result.LastEvaluatedKey;
     }
 
