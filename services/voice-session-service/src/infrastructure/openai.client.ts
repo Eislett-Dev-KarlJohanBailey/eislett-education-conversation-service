@@ -69,7 +69,6 @@ export class OpenAIClient {
             silence_duration_ms: 700,
             threshold: 0.6,
           },
-          expires_in: 60,
         }),
       }
     );
