@@ -60,15 +60,6 @@ export class OpenAIClient {
         body: JSON.stringify({
           model: "gpt-4o-realtime-preview",
           instructions: instructions,
-          modalities: ["audio", "text"],
-          input_audio_transcription: {
-            enabled: true,
-          },
-          turn_detection: {
-            type: "server_vad",
-            silence_duration_ms: 700,
-            threshold: 0.6,
-          },
         }),
       }
     );
