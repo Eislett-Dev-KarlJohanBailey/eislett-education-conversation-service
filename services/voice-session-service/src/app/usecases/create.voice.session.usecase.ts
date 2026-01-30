@@ -12,8 +12,9 @@ export interface CreateVoiceSessionOutput {
   session_id: string;
 }
 
-// Template instructions that focus on natural discussion
-const INSTRUCTION_TEMPLATE = `You are a engaging conversation partner.
+// Template instructions that focus on natural discussion (English only)
+const INSTRUCTION_TEMPLATE = `You are an engaging conversation partner.
+Speak only in English. Do not respond in any other language.
 Engage in natural, realistic discussions with the user.
 Be conversational and warm, as if talking to a friend.
 Keep responses concise and natural, avoiding overly formal language.
