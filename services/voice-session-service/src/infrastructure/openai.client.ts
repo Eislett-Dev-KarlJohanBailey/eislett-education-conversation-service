@@ -60,6 +60,8 @@ export class OpenAIClient {
         body: JSON.stringify({
           model: "gpt-4o-realtime-preview",
           instructions: instructions,
+          voice: "coral",
+          temperature: 0.3,
         }),
       }
     );
