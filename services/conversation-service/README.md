@@ -73,6 +73,17 @@ Lists conversation packages with optional filters:
 - `page_number` - Page number (default: 1)
 - `page_size` - Page size (default: 20)
 
+### Packages (alias for conversation packages)
+
+Same resource as conversation packages, shorter path. Body/response: `name`, `description`, `categories`, `topics` (list of strings). Filter list by `category`.
+
+| Method | Path |
+|--------|------|
+| POST | `/packages` |
+| PUT | `/packages/{id}` |
+| GET | `/packages` (query: `category`, `page_number`, `page_size`) |
+| DELETE | `/packages/{id}` |
+
 ## Conversation Plan Targets
 
 Conversation plans support various target types:

@@ -370,7 +370,7 @@ module "lambda_api_link" {
   api_gateway_root_id = data.terraform_remote_state.foundation.outputs.api_gateway_root_id
   lambda_function_arn  = module.conversation_service_lambda.function_arn
   lambda_function_name = module.conversation_service_lambda.function_name
-  paths = ["conversation-plans", "conversation-packages", "conversations"]
+  paths = ["conversation-plans", "conversation-packages", "conversations", "packages"]
 }
 
 resource "aws_api_gateway_deployment" "deployment" {

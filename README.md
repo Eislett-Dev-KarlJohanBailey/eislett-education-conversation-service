@@ -191,6 +191,15 @@ Plans have `packageId`, `stage` (1–10), `name`, `description`, and `targets[]`
 
 Packages have `name`, `description`, `productId?`, `topics[]`, `categories[]`, `tags[]`.
 
+#### Packages (shorter path, same resource)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/packages` | Create a package (body: `name`, `description`, `topics[]`, `categories[]`, etc.). |
+| `PUT` | `/packages/{id}` | Update a package. |
+| `GET` | `/packages` | List packages (optional: `category`, `page_number`, `page_size`). |
+| `DELETE` | `/packages/{id}` | Delete a package. |
+
 #### Conversations
 
 | Method | Path | Description |
