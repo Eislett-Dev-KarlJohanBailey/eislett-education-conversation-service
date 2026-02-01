@@ -28,3 +28,9 @@ variable "environment_variables" {
   type        = map(string)
   default     = {}
 }
+
+variable "timeout" {
+  description = "Lambda timeout in seconds (default 3, max 900; API Gateway max integration is 29s)"
+  type        = number
+  default     = 3
+}

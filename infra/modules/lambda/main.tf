@@ -1,9 +1,10 @@
 resource "aws_lambda_function" "this" {
-  function_name = var.function_name
-  handler       = var.handler
-  runtime       = var.runtime
-  filename      = var.filename
-  role          = var.iam_role_arn
+  function_name   = var.function_name
+  handler         = var.handler
+  runtime         = var.runtime
+  filename        = var.filename
+  role            = var.iam_role_arn
+  timeout         = var.timeout
   source_code_hash = filebase64sha256(var.filename)
 
   environment {

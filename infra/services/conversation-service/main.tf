@@ -141,12 +141,14 @@ resource "aws_iam_role_policy" "secrets_manager" {
 }
 
 # Lambda Function (conversation-package-service code)
+# Timeout 28s: analyze-transcript calls OpenAI; API Gateway max integration timeout is 29s
 module "conversation_package_service_lambda" {
   source = "../../modules/lambda"
 
   function_name = "conversation-package-service"
   handler       = "dist/index.handler"
   runtime       = "nodejs20.x"
+  timeout       = 28
   filename      = abspath("${path.cwd}/services/conversation-package-service/function.zip")
   iam_role_arn  = module.conversation_package_service_iam_role.role_arn
 
