@@ -1,0 +1,110 @@
+import fetch from "node-fetch";
+import {
+  SecretsManagerClient,
+  GetSecretValueCommand,
+} from "@aws-sdk/client-secrets-manager";
+import type { ConversationTarget } from "../domain/types/package.types";
+import type { TranscriptAnalysisResult } from "../domain/types/package.types";
+import { validateTranscriptAnalysisSchema } from "../domain/validation/analysis-schema";
+
+export interface AnalyzeTranscriptInput {
+  targets: ConversationTarget[];
+  transcript: string;
+}
+
+export class OpenAIClient {
+  private apiKey: string | null = null;
+
+  async initialize(projectName: string, environment: string): Promise<void> {
+    const secretName = `${projectName}-${environment}-openai-api-key`;
+    const secretsClient = new SecretsManagerClient({ region: "us-east-1" });
+
+    try {
+      const response = await secretsClient.send(
+        new GetSecretValueCommand({ SecretId: secretName })
+      );
+
+      const secretString = response.SecretString || "";
+      try {
+        const parsed = JSON.parse(secretString) as Record<string, unknown>;
+        const key = parsed.key ?? parsed.apiKey ?? secretString;
+        this.apiKey = typeof key === "string" ? key : String(key);
+      } catch {
+        this.apiKey = secretString;
+      }
+    } catch (error) {
+      throw new Error(
+        `Failed to load OpenAI API key from Secrets Manager: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+
+  async analyzeTranscript(input: AnalyzeTranscriptInput): Promise<TranscriptAnalysisResult> {
+    if (!this.apiKey) {
+      throw new Error("OpenAIClient not initialized");
+    }
+
+    const targetsDescription = input.targets
+      .map(
+        (t) =>
+          `- key: "${t.key}", description: ${t.description}, check: ${t.check}${t.amount != null ? `, amount: ${t.amount}` : ""}`
+      )
+      .join("\n");
+
+    const systemPrompt = `You are an expert at analyzing conversation transcripts against learning targets.
+Return a JSON object with a single key "feedback" whose value is an array of approximately 3 feedback objects.
+Each feedback object must have:
+- "content": string (one clear feedback message)
+- "isPositive": boolean (true if the feedback is encouraging, false if it points out something to improve)
+- "targets": array of strings. Include a target's key ONLY if the transcript met that target's "check" requirement (e.g. said the word enough times, covered the point, avoided the word). Omit keys for targets that were not met.
+
+Return ONLY valid JSON, no markdown or extra text.`;
+
+    const userPrompt = `Targets:
+${targetsDescription}
+
+Transcript to analyze:
+---
+${input.transcript}
+---
+
+Return JSON: { "feedback": [ { "content": "...", "isPositive": true/false, "targets": ["key1", ...] }, ... ] }`;
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${this.apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.3,
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`OpenAI API error: ${response.status} ${response.statusText} - ${errText}`);
+    }
+
+    const data = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
+    const content = data.choices?.[0]?.message?.content;
+    if (typeof content !== "string") {
+      throw new Error("OpenAI response missing content");
+    }
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(content);
+    } catch {
+      throw new Error("OpenAI response is not valid JSON");
+    }
+
+    return validateTranscriptAnalysisSchema(parsed);
+  }
+}

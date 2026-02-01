@@ -27,13 +27,13 @@ jobs:
         run: npm install
 
       - name: Build
-        run: npx turbo run build --filter=@services/conversation-service --filter=@services/transcript-service --filter=@services/voice-session-service
+        run: npx turbo run build --filter=@services/conversation-package-service --filter=@services/voice-session-service
 
       - name: Package
-        run: npx turbo run package --filter=@services/conversation-service --filter=@services/transcript-service --filter=@services/voice-session-service
+        run: npx turbo run package --filter=@services/conversation-package-service --filter=@services/voice-session-service
 
       - name: Deploy (dry run)
-        run: npx turbo run deploy --filter=@services/conversation-service --filter=@services/transcript-service --filter=@services/voice-session-service
+        run: npx turbo run deploy --filter=@services/conversation-package-service --filter=@services/voice-session-service
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -66,7 +66,7 @@ jobs:
       - name: Bootstrap Terraform backend
         run: |
           PROJECT_NAME="${{ steps.project.outputs.project_name }}"
-          SERVICES="voice-session-service transcript-service conversation-service"
+          SERVICES="voice-session-service conversation-service"
           for service in $SERVICES; do
             export BUCKET="${PROJECT_NAME}-${{ steps.env.outputs.environment }}-${service}-state"
             export TABLE="${PROJECT_NAME}-${{ steps.env.outputs.environment }}-${service}-state-locking"
@@ -77,29 +77,8 @@ jobs:
       - name: Deploy services
         run: |
           PROJECT_NAME="${{ steps.project.outputs.project_name }}"
-          # Deploy in order: voice-session-service and transcript-service first (no cross-service deps),
-          # then conversation-service (depends on transcript-service remote state)
-          for service in voice-session-service transcript-service; do
-            if [ ! -f "services/$service/function.zip" ]; then
-              echo "Error: function.zip not found at services/$service/function.zip"
-              exit 1
-            fi
-            terraform -chdir=infra/services/$service init \
-              -backend-config="bucket=${PROJECT_NAME}-${{ steps.env.outputs.environment }}-${service}-state" \
-              -backend-config="key=tf-infra/${{ steps.env.outputs.environment }}.tfstate" \
-              -backend-config="region=us-east-1" \
-              -backend-config="dynamodb_table=${PROJECT_NAME}-${{ steps.env.outputs.environment }}-${service}-state-locking" \
-              -backend-config="encrypt=true"
-            terraform -chdir=infra/services/$service apply -auto-approve \
-              -var="project_name=${PROJECT_NAME}" \
-              -var="environment=${{ steps.env.outputs.environment }}" \
-              -var="state_bucket_name=${{ secrets.TF_STATE_BUCKET_NAME }}" \
-              -var="state_region=${{ secrets.TF_STATE_REGION }}" \
-              -var="state_bucket_key=${{ secrets.TF_STATE_BUCKET_KEY }}"
-          done
-
-          # Deploy conversation-service (depends on transcript-service)
-          service="conversation-service"
+          # Deploy voice-session-service
+          service="voice-session-service"
           if [ ! -f "services/$service/function.zip" ]; then
             echo "Error: function.zip not found at services/$service/function.zip"
             exit 1
@@ -115,6 +94,23 @@ jobs:
             -var="environment=${{ steps.env.outputs.environment }}" \
             -var="state_bucket_name=${{ secrets.TF_STATE_BUCKET_NAME }}" \
             -var="state_region=${{ secrets.TF_STATE_REGION }}" \
-            -var="state_bucket_key=${{ secrets.TF_STATE_BUCKET_KEY }}" \
-            -var="usage_event_queue_url=${{ secrets.USAGE_EVENT_QUEUE_URL }}" \
-            -var="usage_event_queue_arn=${{ secrets.USAGE_EVENT_QUEUE_ARN }}"
+            -var="state_bucket_key=${{ secrets.TF_STATE_BUCKET_KEY }}"
+
+          # Deploy conversation-service (conversation-package-service code)
+          service="conversation-service"
+          if [ ! -f "services/conversation-package-service/function.zip" ]; then
+            echo "Error: function.zip not found at services/conversation-package-service/function.zip"
+            exit 1
+          fi
+          terraform -chdir=infra/services/$service init \
+            -backend-config="bucket=${PROJECT_NAME}-${{ steps.env.outputs.environment }}-${service}-state" \
+            -backend-config="key=tf-infra/${{ steps.env.outputs.environment }}.tfstate" \
+            -backend-config="region=us-east-1" \
+            -backend-config="dynamodb_table=${PROJECT_NAME}-${{ steps.env.outputs.environment }}-${service}-state-locking" \
+            -backend-config="encrypt=true"
+          terraform -chdir=infra/services/$service apply -auto-approve \
+            -var="project_name=${PROJECT_NAME}" \
+            -var="environment=${{ steps.env.outputs.environment }}" \
+            -var="state_bucket_name=${{ secrets.TF_STATE_BUCKET_NAME }}" \
+            -var="state_region=${{ secrets.TF_STATE_REGION }}" \
+            -var="state_bucket_key=${{ secrets.TF_STATE_BUCKET_KEY }}"
