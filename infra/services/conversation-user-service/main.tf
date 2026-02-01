@@ -36,6 +36,22 @@ data "terraform_remote_state" "foundation" {
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
+# JWT secret for verifying access tokens
+data "aws_secretsmanager_secret" "jwt_access_token_secret" {
+  name = "${var.project_name}-${var.environment}-jwt-access-token-secret"
+}
+
+data "aws_secretsmanager_secret_version" "jwt_access_token_secret" {
+  secret_id = data.aws_secretsmanager_secret.jwt_access_token_secret.id
+}
+
+locals {
+  jwt_access_token_secret = try(
+    jsondecode(data.aws_secretsmanager_secret_version.jwt_access_token_secret.secret_string)["key"],
+    data.aws_secretsmanager_secret_version.jwt_access_token_secret.secret_string
+  )
+}
+
 # DynamoDB Table for Conversation Users (profile by userId)
 resource "aws_dynamodb_table" "conversation_users" {
   name         = "${var.project_name}-${var.environment}-conversation-users"
@@ -76,6 +92,23 @@ module "conversation_user_service_iam_role" {
   }
 }
 
+# IAM policy for Secrets Manager (JWT secret)
+resource "aws_iam_role_policy" "jwt_secret" {
+  name = "conversation-user-service-jwt-secret-${var.environment}"
+  role = module.conversation_user_service_iam_role.role_name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["secretsmanager:GetSecretValue"]
+        Resource = [data.aws_secretsmanager_secret.jwt_access_token_secret.arn]
+      }
+    ]
+  })
+}
+
 # Lambda Function
 module "conversation_user_service_lambda" {
   source = "../../modules/lambda"
@@ -88,6 +121,7 @@ module "conversation_user_service_lambda" {
 
   environment_variables = {
     CONVERSATION_USERS_TABLE = aws_dynamodb_table.conversation_users.name
+    JWT_ACCESS_TOKEN_SECRET  = local.jwt_access_token_secret
   }
 }
 
