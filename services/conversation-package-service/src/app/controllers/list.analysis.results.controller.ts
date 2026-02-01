@@ -1,5 +1,6 @@
 import type { RequestContext } from "../../handler/api-gateway/types";
 import { ListAnalysisResultsUseCase } from "../usecases/list.analysis.results.usecase";
+import { AuthenticationError } from "@libs/domain";
 
 export class ListAnalysisResultsController {
   constructor(private readonly useCase: ListAnalysisResultsUseCase) {}
@@ -7,7 +8,7 @@ export class ListAnalysisResultsController {
   handle = async (req: RequestContext) => {
     const userId = req.user?.id;
     if (!userId) {
-      throw new Error("User authentication required");
+      throw new AuthenticationError("User authentication required");
     }
 
     const conversationPackageId = req.query?.conversationPackageId as string | undefined;

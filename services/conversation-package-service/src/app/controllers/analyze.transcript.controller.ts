@@ -1,6 +1,7 @@
 import type { RequestContext } from "../../handler/api-gateway/types";
 import type { ConversationTarget } from "../../domain/types/package.types";
 import { AnalyzeTranscriptUseCase } from "../usecases/analyze.transcript.usecase";
+import { AuthenticationError } from "@libs/domain";
 
 export class AnalyzeTranscriptController {
   constructor(private readonly useCase: AnalyzeTranscriptUseCase) {}
@@ -8,7 +9,7 @@ export class AnalyzeTranscriptController {
   handle = async (req: RequestContext) => {
     const userId = req.user?.id;
     if (!userId) {
-      throw new Error("User authentication required");
+      throw new AuthenticationError("User authentication required");
     }
 
     const body = (req.body ?? {}) as Record<string, unknown>;

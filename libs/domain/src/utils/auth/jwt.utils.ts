@@ -4,7 +4,8 @@ import { AuthenticationError } from "./errors/authentication.error";
 import { JwtUser, JwtDecodeOptions } from "./jwt.types";
 
 /**
- * Extracts Bearer token from API Gateway headers
+ * Extracts Bearer token from API Gateway headers.
+ * Same as eislett-education-payment-service: Authorization or authorization header, Bearer <token> only.
  */
 function extractBearerToken(
   event: APIGatewayProxyEvent
@@ -29,7 +30,8 @@ function extractBearerToken(
 }
 
 /**
- * Decode + verify JWT from API Gateway event
+ * Decode + verify JWT from API Gateway event.
+ * Same as eislett-education-payment-service libs/domain jwt.utils.
  */
 export function getCurrentUserFromEvent(
   event: APIGatewayProxyEvent,
@@ -47,20 +49,17 @@ export function getCurrentUserFromEvent(
       return null;
     }
 
-    const secret = process.env.JWT_ACCESS_TOKEN_SECRET;
-    if (!secret || typeof secret !== "string") {
-      throw new AuthenticationError("JWT verification not configured");
-    }
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_ACCESS_TOKEN_SECRET as string,
+    ) as JwtUser;
 
-    const decoded = jwt.verify(token, secret) as Record<string, unknown> & { id?: string; userId?: string; role?: string };
-
-    const id = decoded?.id ?? decoded?.userId;
-    if (!id || typeof id !== "string") {
+    if (!decoded?.id) {
       throw new AuthenticationError("Invalid token payload");
     }
 
     return {
-      id,
+      id: decoded.id,
       role: decoded.role,
     };
   } catch (error) {

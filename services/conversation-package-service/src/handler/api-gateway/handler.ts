@@ -64,12 +64,27 @@ export async function apiHandler(event: APIGatewayProxyEvent) {
     const normalizedPath = normalizePath(actualPath);
     const pathParams: Record<string, string> = { ...req.pathParams };
 
+    const handler = findRouteHandler(req.method, normalizedPath, pathParams);
+    if (!handler) {
+      return response(404, { message: "Route not found" });
+    }
+
+    // Same JWT handling as eislett-education-payment-service: requireUser(event) for auth-required routes
+    const authRequired =
+      (normalizedPath === "packages/analyze-transcript" && req.method === "POST") ||
+      (normalizedPath === "packages/analysis-results" && req.method === "GET");
+
     let user: { id: string; role?: string } | null = null;
-    try {
+    if (authRequired) {
       const { requireUser } = await import("@libs/domain");
       user = requireUser(event);
-    } catch {
-      // User optional for package CRUD; required for analyze-transcript and analysis-results
+    } else {
+      try {
+        const { getCurrentUserFromEvent } = await import("@libs/domain");
+        user = getCurrentUserFromEvent(event, { required: false });
+      } catch {
+        user = null;
+      }
     }
 
     const requestWithUser: RequestContext = {
@@ -78,12 +93,6 @@ export async function apiHandler(event: APIGatewayProxyEvent) {
       pathParams,
       user: user ?? undefined,
     };
-
-    const handler = findRouteHandler(req.method, normalizedPath, pathParams);
-
-    if (!handler) {
-      return response(404, { message: "Route not found" });
-    }
 
     const result = await handler(requestWithUser);
 
