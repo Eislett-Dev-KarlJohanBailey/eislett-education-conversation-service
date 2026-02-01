@@ -66,8 +66,8 @@ export async function apiHandler(event: APIGatewayProxyEvent) {
 
     let user: { id: string; role?: string } | null = null;
     if (normalizedPath.startsWith("users")) {
-      const { requireUser } = await import("@libs/domain");
-      user = requireUser(event);
+      const { getCurrentUserFromEvent } = await import("@libs/domain");
+      user = getCurrentUserFromEvent(event, { required: true });
     }
 
     const requestWithUser: RequestContext = {
