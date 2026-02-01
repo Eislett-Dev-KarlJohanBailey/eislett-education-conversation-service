@@ -14,9 +14,9 @@ const {
 export const routes: Record<string, (req: RequestContext) => Promise<unknown>> = {
   "POST /packages": createPackageController.handle,
   "GET /packages": listPackagesController.handle,
+  "POST /packages/analyze-transcript": analyzeTranscriptController.handle,
   "GET /packages/{id}": getPackageController.handle,
   "PUT /packages/{id}": updatePackageController.handle,
   "DELETE /packages/{id}": deletePackageController.handle,
-  "POST /packages/analyze-transcript": analyzeTranscriptController.handle,
   "GET /packages/analysis-results": listAnalysisResultsController.handle,
 };
