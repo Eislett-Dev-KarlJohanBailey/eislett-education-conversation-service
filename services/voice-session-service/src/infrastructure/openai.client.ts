@@ -59,7 +59,10 @@ export class OpenAIClient {
       model: "gpt-4o-mini-realtime-preview",
       instructions,
       voice: "coral",
-      temperature: 0.6,
+      // Lower = more controlled, less fast / excitable speech
+      temperature: 0.3,
+      // Encourage thoughtful, paced responses
+      max_output_tokens: 300,
       input_audio_transcription: {
         model: "gpt-4o-transcribe",
       },
