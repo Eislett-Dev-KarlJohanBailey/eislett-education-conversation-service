@@ -63,27 +63,28 @@ Each feedback object must have:
 - "isPositive": boolean (true if the feedback is encouraging, false if it points out something to improve)
 - "targets": array of strings. Include a target's key ONLY if the transcript met that target's "check" requirement (e.g. said the word enough times, covered the point, avoided the word). Omit keys for targets that were not met.
 ${withTargetLanguage ? `
-When a target language is provided, also include a key "wordsUsed": an array of objects for each distinct word or short phrase the USER said in that language (use an empty array if the user said nothing in that language). Each object must have:
-- "word": string (the word or phrase as written in the target language)
-- "pronunciation": string (phonetic or IPA pronunciation, or "N/A" if not applicable)
-- "meaning": string (brief meaning in English)
-Include only words/phrases actually spoken by the user in the transcript, not by the AI.` : ""}
+When a target language (${targetLanguageName}) is provided, you MAY include a key "wordsUsed" ONLY if the user said at least one word strictly in ${targetLanguageName}.
+- STRICT: Include in "wordsUsed" ONLY words that are actually in ${targetLanguageName}. Do NOT include words from other languages (e.g. if target is Spanish, do not include English or other-language words).
+- If the user said no words that are strictly in ${targetLanguageName}, do NOT include the "wordsUsed" key in your response at all.
+- Each "wordsUsed" object must have: "word" (as written in ${targetLanguageName}), "pronunciation" (phonetic or IPA), "meaning" (brief, in English).
+- Include only words/phrases spoken by the USER, not by the AI. Deduplicate.` : ""}
 
 Return ONLY valid JSON, no markdown or extra text.`;
 
     const wordsUsedHint = withTargetLanguage
-      ? ` Also include "wordsUsed": [ { "word": "...", "pronunciation": "...", "meaning": "..." }, ... ] for each word the user said in ${targetLanguageName}.`
+      ? ` Include "wordsUsed" only if the user said at least one word strictly in ${targetLanguageName}; use only words that are actually in ${targetLanguageName}, and omit the "wordsUsed" key entirely if none.`
       : "";
 
     const userPrompt = `Targets:
 ${targetsDescription}
+${withTargetLanguage ? `Target Language: ${targetLanguageName}` : ""}
 
 Transcript to analyze:
 ---
 ${input.transcript}
 ---
 
-Return JSON: { "feedback": [ { "content": "...", "isPositive": true/false, "targets": ["key1", ...] }, ... ] }${wordsUsedHint}`;
+Return JSON: { "feedback": [ { "content": "...", "isPositive": true/false, "targets": ["key1", ...] }, ... ]${withTargetLanguage ? ', "wordsUsed": [ { "word": "...", "pronunciation": "...", "meaning": "..." }, ... ]' : ''} }${wordsUsedHint}`;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 25_000);

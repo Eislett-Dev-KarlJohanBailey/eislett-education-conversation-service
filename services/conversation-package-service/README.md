@@ -240,7 +240,7 @@ Analyze a transcript against a list of targets using OpenAI GPT-4o. Returns ~3 f
 | `topicKey` | string | Yes | Topic identifier (e.g. conversation or scenario key) |
 | `targets` | array | Yes | Targets to evaluate (each with `key`, `description`, `check`, optional `amount`) |
 | `transcript` | string | Yes | Full transcript text to analyze |
-| `targetLanguage` | string | No | If set, response includes `wordsUsed`: words the user said in this language, with pronunciation and meaning |
+| `targetLanguage` | string | No | If set, response may include `wordsUsed` only when the user said words strictly in this language (never words from other languages) |
 
 **Example request:**
 
@@ -274,7 +274,7 @@ With target language (e.g. Spanish):
 
 - The service calls OpenAI GPT-4o (JSON mode) to analyze the transcript.
 - The AI returns ~3 feedback objects. Each has `content`, `isPositive`, and `targets` (array of target **keys** that met their `check`; keys not met are omitted).
-- When `targetLanguage` is provided, the response includes `wordsUsed`: an array of objects for words the user said in that language. Each object has `word`, `pronunciation`, and `meaning`.
+- When `targetLanguage` is provided, the response may include `wordsUsed` only if the user said at least one word strictly in that language. `wordsUsed` contains only words that are actually in the target language (words from other languages are never included). If the user said nothing in the target language, `wordsUsed` is omitted. Each object has `word`, `pronunciation`, and `meaning`.
 - The response is validated; if the AI returns invalid JSON or wrong schema, the service returns an error and does not save.
 - The result is stored by `userId`, `conversationPackageId`, and `topicKey` for later retrieval.
 
@@ -359,9 +359,10 @@ The service validates the OpenAI response for `POST /packages/analyze-transcript
   - `content`: string
   - `isPositive`: boolean
   - `targets`: array of strings (target keys only)
-- When the request included `targetLanguage`, the AI may return an optional `wordsUsed` array. If present, it is validated:
+- When the request included `targetLanguage`, the AI may return an optional `wordsUsed` array only for words strictly in that language. If present, it is validated:
   - `wordsUsed` must be an array of at most 50 items.
   - Each item must have `word`, `pronunciation`, and `meaning` (all strings).
+  - The service only returns `wordsUsed` when the user actually spoke words in the target language; otherwise the key is omitted.
 
 If validation fails, an error is returned and the result is not saved.
 
