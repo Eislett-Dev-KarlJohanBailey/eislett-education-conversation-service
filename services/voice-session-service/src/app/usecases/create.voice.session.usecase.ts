@@ -5,6 +5,8 @@ export interface CreateVoiceSessionInput {
   instructions?: string;
   /** When true, session returns text-only output (no audio); default false = audio output */
   textOnlyOutput?: boolean;
+  /** When false, do not prepend the built-in instruction template; default true */
+  useInstructionTemplate?: boolean;
   userId?: string;
 }
 
@@ -32,15 +34,16 @@ export class CreateVoiceSessionUseCase {
     input: CreateVoiceSessionInput
   ): Promise<CreateVoiceSessionOutput> {
     // Ensure client is initialized
-    const ensureInit = (global as any).__voiceSessionServiceEnsureInit;
+    const ensureInit = (globalThis as unknown as { __voiceSessionServiceEnsureInit?: () => Promise<void> }).__voiceSessionServiceEnsureInit;
     if (ensureInit) {
       await ensureInit();
     }
 
-    // Combine template with user-provided instructions
-    const combinedInstructions = input.instructions
-      ? `${INSTRUCTION_TEMPLATE}\n\n${input.instructions}`
-      : INSTRUCTION_TEMPLATE;
+    // Combine template with user-provided instructions (or omit template when disabled)
+    const useTemplate = input.useInstructionTemplate !== false;
+    const combinedInstructions = useTemplate
+      ? (input.instructions ? `${INSTRUCTION_TEMPLATE}\n\n${input.instructions}` : INSTRUCTION_TEMPLATE)
+      : (input.instructions ?? "");
 
     // Generate session ID
     const sessionId = `session-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
