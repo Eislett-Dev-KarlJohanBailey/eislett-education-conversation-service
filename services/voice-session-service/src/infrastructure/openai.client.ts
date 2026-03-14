@@ -59,15 +59,12 @@ export class OpenAIClient {
       model: "gpt-4o-mini-realtime-preview",
       instructions,
       voice: "coral",
-      // Lower = more controlled, less fast / excitable speech
       temperature: 0.6,
+      modalities: ["text", "audio"],
       input_audio_transcription: {
         model: "gpt-4o-transcribe",
       },
     };
-    if (options.textOnlyOutput === true) {
-      payload.output_modalities = ["text"];
-    }
 
     const response = await fetch(
       "https://api.openai.com/v1/realtime/sessions",
