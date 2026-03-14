@@ -51,6 +51,11 @@ export class OpenAIClient {
     sessionId: string,
     options: CreateSessionOptions = {}
   ): Promise<CreateSessionOutput> {
+
+    if(!options) {
+      options = {};
+    }
+
     if (!this.apiKey) {
       throw new Error("OpenAIClient not initialized");
     }
